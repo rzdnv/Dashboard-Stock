@@ -4,16 +4,17 @@ import { PrismaClient } from "@/generated/prisma/client";
 import { PrismaPg } from "@prisma/adapter-pg";
 import { Pool } from "pg";
 import bcrypt from "bcrypt";
+import jwt from "jsonwebtoken"; // Tambah import JWT
 
-// Setup adapter dan koneksi database
 const connectionString = process.env.DATABASE_URL;
 const pool = new Pool({ connectionString });
 const adapter = new PrismaPg(pool);
 
-// Singleton PrismaClient dengan adapter
 const globalForPrisma = globalThis as unknown as { prisma: PrismaClient };
 const prisma = globalForPrisma.prisma || new PrismaClient({ adapter });
 if (process.env.NODE_ENV !== "production") globalForPrisma.prisma = prisma;
+
+const JWT_SECRET = process.env.JWT_SECRET || "your-secret-key"; // Tambah secret
 
 interface CreateUserRequest {
   name: string;
@@ -24,6 +25,24 @@ interface CreateUserRequest {
 
 export async function POST(req: NextRequest) {
   try {
+    // Auth: Decode JWT token dan cek role admin – PERBAIKAN UTAMA
+    const authHeader = req.headers.get("authorization");
+    if (!authHeader || !authHeader.startsWith("Bearer ")) {
+      return NextResponse.json({ error: "Token diperlukan" }, { status: 401 });
+    }
+    const token = authHeader.split(" ")[1];
+    const decoded = jwt.verify(token, JWT_SECRET) as {
+      id: number;
+      username: string;
+      role: string;
+    };
+    if (decoded.role !== "admin") {
+      return NextResponse.json(
+        { error: "Hanya admin yang bisa menambah user" },
+        { status: 403 },
+      );
+    }
+
     const { name, username, password, role }: CreateUserRequest =
       await req.json();
 
@@ -65,11 +84,11 @@ export async function POST(req: NextRequest) {
       },
     });
 
-    // Response tanpa password – konversi id ke string untuk hindari error BigInt
+    // Response tanpa password – konversi id ke string
     return NextResponse.json({
       success: true,
       user: {
-        id: newUser.id.toString(), // Konversi BigInt ke string
+        id: newUser.id.toString(),
         name: newUser.name,
         username: newUser.username,
         role: newUser.role,
