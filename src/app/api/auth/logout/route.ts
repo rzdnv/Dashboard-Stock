@@ -1,7 +1,6 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 
-export async function POST(req: NextRequest) {
-  // Response untuk clear cookies
+export async function POST() {
   const response = NextResponse.json({ success: true });
 
   // Hapus cookie auth-token
