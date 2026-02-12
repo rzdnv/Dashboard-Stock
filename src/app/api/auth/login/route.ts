@@ -1,92 +1,41 @@
-// import { NextRequest, NextResponse } from "next/server";
-// import { PrismaClient } from "@/generated/prisma";
-// import bcrypt from "bcrypt";
-
-// const prisma = new PrismaClient();
-
-// export async function POST(req: NextRequest) {
-//   try {
-//     const { username, password } = await req.json();
-
-//     // Cari user berdasarkan username
-//     const user = await prisma.users.findUnique({
-//       where: { username },
-//     });
-
-//     if (!user) {
-//       return NextResponse.json(
-//         { error: "Username tidak ditemukan" },
-//         { status: 401 },
-//       );
-//     }
-
-//     // Verifikasi password (asumsikan password di-hash dengan bcrypt)
-//     const isPasswordValid = await bcrypt.compare(password, user.password);
-//     if (!isPasswordValid) {
-//       return NextResponse.json({ error: "Password salah" }, { status: 401 });
-//     }
-
-//     // Jika berhasil, return data user (atau token jika pakai JWT)
-//     return NextResponse.json({
-//       success: true,
-//       user: { id: user.id, name: user.name, role: user.role },
-//     });
-//   } catch (error) {
-//     console.error("Error login:", error);
-//     return NextResponse.json(
-//       { error: "Terjadi kesalahan server" },
-//       { status: 500 },
-//     );
-//   }
-// }
-
 import { NextRequest, NextResponse } from "next/server";
-import { PrismaClient } from "@/generated/prisma";
+import { PrismaClient } from "@/generated/prisma/client";
+import { PrismaPg } from "@prisma/adapter-pg";
+import { Pool } from "pg";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import { ILogin } from "@/types/auth";
 
-const prisma = new PrismaClient();
+const connectionString = process.env.DATABASE_URL;
+const pool = new Pool({ connectionString });
+const adapter = new PrismaPg(pool);
+
+const globalForPrisma = globalThis as unknown as { prisma: PrismaClient };
+const prisma = globalForPrisma.prisma || new PrismaClient({ adapter });
+if (process.env.NODE_ENV !== "production") globalForPrisma.prisma = prisma;
+
 const JWT_SECRET = process.env.JWT_SECRET || "your-secret-key";
-
-// Simple in-memory rate limiting
-const rateLimitMap = new Map<string, { count: number; resetTime: number }>();
-const WINDOW_MS = 15 * 60 * 1000; // 15 menit
-const MAX_REQUESTS = 5;
-
-function checkRateLimit(ip: string): boolean {
-  const now = Date.now();
-  const record = rateLimitMap.get(ip);
-
-  if (!record || now > record.resetTime) {
-    rateLimitMap.set(ip, { count: 1, resetTime: now + WINDOW_MS });
-    return true;
-  }
-
-  if (record.count >= MAX_REQUESTS) {
-    return false;
-  }
-
-  record.count++;
-  return true;
-}
 
 export async function POST(req: NextRequest) {
   try {
-    // Get IP from headers (Next.js way)
-    const forwarded = req.headers.get("x-forwarded-for");
-    const realIp = req.headers.get("x-real-ip");
-    const ip = forwarded?.split(",")[0]?.trim() || realIp || "unknown"; // Ambil IP pertama jika forwarded
+    const { username, password }: ILogin = await req.json();
 
-    // Check rate limit
-    if (!checkRateLimit(ip)) {
+    // Validasi input dasar
+    if (
+      !username ||
+      !password ||
+      typeof username !== "string" ||
+      typeof password !== "string" ||
+      password.length < 6
+    ) {
       return NextResponse.json(
-        { error: "Terlalu banyak percobaan login, coba lagi nanti" },
-        { status: 429 },
+        {
+          error:
+            "Username dan password wajib diisi, password minimal 6 karakter",
+        },
+        { status: 400 },
       );
     }
-
-    const { username, password }: ILogin = await req.json();
 
     // Cari user
     const user = await prisma.users.findUnique({ where: { username } });
@@ -103,17 +52,16 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Password salah" }, { status: 401 });
     }
 
-    // Generate JWT token
     const token = jwt.sign(
-      { id: user.id, username: user.username, role: user.role },
+      { id: user.id.toString(), username: user.username, role: user.role }, // user.id.toString() mencegah error serialisasi
       JWT_SECRET,
       { expiresIn: "1h" },
     );
 
-    // Response dengan token
+    // Response dengan token – id sudah dikonversi
     const response = NextResponse.json({
       success: true,
-      user: { id: user.id, name: user.name, role: user.role },
+      user: { id: user.id.toString(), name: user.name, role: user.role },
       token,
     });
 
@@ -122,7 +70,7 @@ export async function POST(req: NextRequest) {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       sameSite: "strict",
-      maxAge: 60 * 60,
+      maxAge: 60 * 60, // 1 jam
       path: "/",
     });
 

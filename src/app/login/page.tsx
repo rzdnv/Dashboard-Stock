@@ -1,5 +1,7 @@
 "use client";
 
+import { useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -13,8 +15,17 @@ import {
 import useLogin from "./useLogin";
 
 export default function LoginPage() {
+  const router = useRouter();
   const { register, handleSubmit, errors, isPendingMutateAuthLogin } =
-    useLogin(); // Gunakan hook untuk semua logika
+    useLogin();
+
+  useEffect(() => {
+    // Cek jika sudah login, redirect ke dashboard
+    const token = localStorage.getItem("auth-token");
+    if (token) {
+      router.push("/dashboard");
+    }
+  }, [router]);
 
   return (
     <div className="flex items-center justify-center min-h-screen bg-gray-50">
