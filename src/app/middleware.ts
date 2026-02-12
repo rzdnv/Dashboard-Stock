@@ -1,17 +1,40 @@
-import { NextResponse } from "next/server";
-import type { NextRequest } from "next/server";
+// middleware.ts
+import { NextRequest, NextResponse } from "next/server";
+import jwt from "jsonwebtoken";
 
-export function middleware(req: NextRequest) {
-  const token = req.cookies.get("auth-token")?.value;
-  const isLoggedIn = !!token;
+interface JwtPayload {
+  id: number;
+  username: string;
+  role: string;
+}
 
-  if (req.nextUrl.pathname === "/login" && isLoggedIn) {
-    return NextResponse.redirect(new URL("/dashboard", req.url));
+export function middleware(request: NextRequest) {
+  const token = request.cookies.get("auth-token")?.value;
+  if (!token) return NextResponse.redirect(new URL("/login", request.url));
+
+  try {
+    const decoded = jwt.verify(
+      token,
+      process.env.JWT_SECRET || "default-secret",
+    ) as JwtPayload; // Ganti 'as any' dengan 'as JwtPayload' untuk tipe spesifik
+    if (
+      request.nextUrl.pathname.startsWith("/admin") &&
+      decoded.role.toLowerCase() !== "admin"
+    ) {
+      return NextResponse.redirect(new URL("/operator/dashboard", request.url));
+    }
+    if (
+      request.nextUrl.pathname.startsWith("/operator") &&
+      decoded.role.toLowerCase() !== "operator"
+    ) {
+      return NextResponse.redirect(new URL("/admin/dashboard", request.url));
+    }
+  } catch {
+    return NextResponse.redirect(new URL("/login", request.url));
   }
-
-  if (req.nextUrl.pathname.startsWith("/dashboard") && !isLoggedIn) {
-    return NextResponse.redirect(new URL("/login", req.url));
-  }
-
   return NextResponse.next();
 }
+
+export const config = {
+  matcher: ["/admin/:path*", "/operator/:path*"],
+};
