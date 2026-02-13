@@ -20,10 +20,15 @@ export default function LoginPage() {
     useLogin();
 
   useEffect(() => {
-    // Cek jika sudah login, redirect ke dashboard
+    const userStr = localStorage.getItem("user");
     const token = localStorage.getItem("auth-token");
-    if (token) {
-      router.push("/dashboard");
+
+    if (token && userStr) {
+      const { role } = JSON.parse(userStr);
+
+      const basePath = role === "ADMIN" ? "admin" : "operator";
+
+      router.push(`/${basePath}/dashboard`);
     }
   }, [router]);
 

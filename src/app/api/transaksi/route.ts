@@ -28,7 +28,7 @@ export async function GET() {
       barang_id: Number(t.barang_id),
       user_id: Number(t.user_id),
       barang: { ...t.barang, id: Number(t.barang.id) },
-      users: { ...t.users, id: Number(t.users.id), password: undefined },
+      users: { ...t.users, id: Number(t.users.id) }, // Hapus password
     }));
     return NextResponse.json(transaksiWithNumberId);
   } catch (error) {
@@ -43,14 +43,15 @@ export async function GET() {
 export async function POST(req: NextRequest) {
   try {
     const { tipe_transaksi, jumlah, barang_id } = await req.json();
+    console.log("Received data:", { tipe_transaksi, jumlah, barang_id }); // Debug log
 
-    // Validasi input – Perbaikan: Gunakan uppercase untuk enum
+    // Validasi input
     if (
       !tipe_transaksi ||
       !jumlah ||
       !barang_id ||
       jumlah <= 0 ||
-      !["MASUK", "KELUAR"].includes(tipe_transaksi) // Ganti ke uppercase
+      !["MASUK", "KELUAR"].includes(tipe_transaksi)
     ) {
       return NextResponse.json(
         {
@@ -66,32 +67,38 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Token diperlukan" }, { status: 401 });
     }
     const token = authHeader.split(" ")[1];
+    console.log("Token received:", token); // Debug log
+
     const decoded = jwt.verify(token, JWT_SECRET) as JwtPayload;
-    const user_id = decoded.id; // Pastikan number
+    console.log("Decoded token:", decoded); // Debug log
+    const user_id = decoded.id;
 
     const result = await prisma.$transaction(async (tx) => {
-      const barang = await tx.barang.findUnique({ where: { id: barang_id } });
+      const barang = await tx.barang.findUnique({
+        where: { id: BigInt(barang_id) },
+      }); // Gunakan BigInt jika schema id adalah BigInt
+      console.log("Barang found:", barang); // Debug log
       if (!barang) throw new Error("Barang tidak ditemukan");
 
       const newStock =
         tipe_transaksi === "MASUK"
           ? barang.stok + jumlah
-          : barang.stok - jumlah; // Ganti ke uppercase
+          : barang.stok - jumlah;
 
       if (newStock < 0)
         throw new Error("Stok tidak cukup untuk transaksi keluar");
 
       await tx.barang.update({
-        where: { id: barang_id },
+        where: { id: BigInt(barang_id) }, // Gunakan BigInt
         data: { stok: newStock },
       });
 
       const transaksi = await tx.transaksi.create({
         data: {
-          tipe_transaksi, // Sekarang uppercase
+          tipe_transaksi,
           jumlah,
-          barang_id,
-          user_id,
+          barang_id: BigInt(barang_id), // Gunakan BigInt
+          user_id: BigInt(user_id), // Gunakan BigInt jika user_id juga BigInt
           tanggal: new Date(),
         },
       });
@@ -99,16 +106,21 @@ export async function POST(req: NextRequest) {
       return transaksi;
     });
 
-    return NextResponse.json({
+    console.log("Transaction result:", result); // Debug log
+
+    // Konversi BigInt ke string untuk response JSON
+    const responseData = {
       ...result,
-      id: Number(result.id),
-      barang_id: Number(result.barang_id),
-      user_id: Number(result.user_id),
-    });
+      id: result.id.toString(),
+      barang_id: result.barang_id.toString(),
+      user_id: result.user_id.toString(),
+    };
+
+    return NextResponse.json(responseData);
   } catch (error: unknown) {
     const errorMessage =
       error instanceof Error ? error.message : "Terjadi kesalahan server";
-    console.error("Error creating transaksi:", error);
+    console.error("Error creating transaksi:", errorMessage); // Debug log
     return NextResponse.json({ error: errorMessage }, { status: 500 });
   }
 }

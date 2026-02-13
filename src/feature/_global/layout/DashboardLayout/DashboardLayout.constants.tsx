@@ -11,19 +11,19 @@ export const SIDEBAR_ADMIN = [
   {
     key: "barang",
     label: "Barang",
-    href: "/admin/dashboard/barang",
+    href: "/admin/barang",
     icon: <Package className="h-4 w-4" />,
   },
   {
     key: "transaksi",
     label: "Transaksi",
-    href: "/admin/dashboard/transaksi",
+    href: "/admin/transaksi",
     icon: <ArrowLeftRight className="h-4 w-4" />,
   },
   {
     key: "user",
     label: "User",
-    href: "/admin/dashboard/users",
+    href: "/admin/users",
     icon: <Users className="h-4 w-4" />,
   },
 ];
@@ -38,13 +38,13 @@ export const SIDEBAR_OPERATOR = [
   {
     key: "barang",
     label: "Barang",
-    href: "/operator/dashboard/barang",
+    href: "/operator/barang",
     icon: <Package className="h-4 w-4" />,
   },
   {
     key: "transaksi",
     label: "Transaksi",
-    href: "/operator/dashboard/transaksi",
+    href: "/operator/transaksi",
     icon: <ArrowLeftRight className="h-4 w-4" />,
   },
 ];

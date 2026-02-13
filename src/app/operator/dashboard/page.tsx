@@ -1,7 +1,7 @@
 import Dashboard from "@/feature/dashboard/main";
 
-const AdminDashboardPage = () => {
+const OperatorDashboardPage = () => {
   return <Dashboard />;
 };
 
-export default AdminDashboardPage;
+export default OperatorDashboardPage;

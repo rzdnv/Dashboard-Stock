@@ -1,16 +1,8 @@
 "use client";
 
+import { IBarang } from "@/types/barang";
 import { useQuery } from "@tanstack/react-query";
 import axios from "axios";
-
-// Interface untuk tipe data barang
-interface Barang {
-  id: number;
-  nama: string;
-  kode: string;
-  stok: number;
-  lokasi_rak: string;
-}
 
 // Interface untuk tipe data transaksi
 interface Transaksi {
@@ -27,7 +19,7 @@ const Dashboard = () => {
     data: barang,
     isLoading: loadingBarang,
     error: errorBarang,
-  } = useQuery<Barang[]>({
+  } = useQuery<IBarang[]>({
     queryKey: ["barang"],
     queryFn: () => axios.get("/api/barang").then((res) => res.data),
   });
@@ -52,7 +44,7 @@ const Dashboard = () => {
 
   return (
     <>
-      <div className="grid grid-cols-1 md:grid-cols-3  gap-4 mb-8 p-5">
+      <div className="grid grid-cols-1 md:grid-cols-3  gap-4 mb-8">
         <div className="p-4 bg-blue-100 border rounded">
           <h3 className="text-lg font-semibold">Total Barang</h3>
           <p className="text-2xl">{totalBarang}</p>

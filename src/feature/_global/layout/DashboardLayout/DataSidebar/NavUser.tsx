@@ -18,16 +18,35 @@ import {
   SidebarMenuItem,
   useSidebar,
 } from "@/components/ui/sidebar";
-import Cookies from "js-cookie";
 import { useRouter } from "next/navigation";
+import axios from "axios";
+import { useEffect, useState } from "react";
 
 export function NavUser() {
   const { isMobile } = useSidebar();
   const router = useRouter();
 
-  const handleLogout = () => {
-    Cookies.remove("auth-token");
-    router.push("/login");
+  const [user, setUser] = useState<{ name: string; role: string } | null>(null);
+
+  useEffect(() => {
+    const userStr = localStorage.getItem("user");
+
+    if (userStr) {
+      setUser(JSON.parse(userStr));
+    }
+  }, []);
+
+  const handleLogout = async () => {
+    try {
+      const res = await axios.post("/api/auth/logout");
+
+      if (res.status === 200) {
+        router.push("/login");
+        router.refresh(); // penting untuk clear state
+      }
+    } catch (error) {
+      console.error("Logout gagal:", error);
+    }
   };
 
   return (
@@ -44,13 +63,16 @@ export function NavUser() {
                 <Avatar className="h-8 w-8 rounded-lg">
                   <AvatarImage
                     src="https://avatar.iran.liara.run/public"
-                    alt="User"
+                    alt={user?.name}
                   />
-                  <AvatarFallback className="rounded-lg">CN</AvatarFallback>
+                  <AvatarFallback className="rounded-lg">
+                    {user?.name.charAt(0).toUpperCase()}
+                  </AvatarFallback>
                 </Avatar>
 
                 <div className="grid flex-1 text-left text-sm leading-tight">
-                  <span className="truncate font-medium">user</span>
+                  <span className="truncate font-medium">{user?.name}</span>
+                  <span className="truncate text-xs">{user?.role}</span>
                 </div>
 
                 <ChevronsUpDown className="ml-auto size-4" />
@@ -69,12 +91,15 @@ export function NavUser() {
                 <Avatar className="h-8 w-8 rounded-lg">
                   <AvatarImage
                     src="https://avatar.iran.liara.run/public"
-                    alt="user"
+                    alt={user?.name}
                   />
-                  <AvatarFallback className="rounded-lg">CN</AvatarFallback>
+                  <AvatarFallback className="rounded-lg">
+                    {user?.name.charAt(0).toUpperCase()}
+                  </AvatarFallback>
                 </Avatar>
                 <div className="grid flex-1 text-left text-sm leading-tight">
-                  <span className="truncate font-medium">user</span>
+                  <span className="truncate font-medium">{user?.name}</span>
+                  <span className="truncate text-xs">{user?.role}</span>
                 </div>
               </div>
             </DropdownMenuLabel>
