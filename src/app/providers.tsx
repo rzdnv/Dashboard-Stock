@@ -1,11 +1,16 @@
-"use client"; // Mark sebagai Client Component
+"use client";
 
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-
-const queryClient = new QueryClient();
+import { SessionProvider } from "next-auth/react";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query"; // Tambah import
+import { useState } from "react";
 
 export function Providers({ children }: { children: React.ReactNode }) {
+  // Buat QueryClient instance
+  const [queryClient] = useState(() => new QueryClient());
+
   return (
-    <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+    <QueryClientProvider client={queryClient}>
+      <SessionProvider>{children}</SessionProvider>
+    </QueryClientProvider>
   );
 }

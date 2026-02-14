@@ -123,7 +123,7 @@ const FormTransaksi = () => {
               <SelectContent>
                 {barangList?.map((barang: IBarang) => (
                   <SelectItem key={barang.id} value={barang.id.toString()}>
-                    {barang.nama} (Stok: {barang.stok})
+                    {barang.nama}
                   </SelectItem>
                 ))}
               </SelectContent>

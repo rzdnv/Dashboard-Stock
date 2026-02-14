@@ -1,4 +1,3 @@
-// app/api/users/route.ts (Semua CRUD di satu file, ID dari query param untuk PUT/DELETE)
 import { NextRequest, NextResponse } from "next/server";
 import { PrismaClient } from "@/generated/prisma/client";
 import { PrismaPg } from "@prisma/adapter-pg";
@@ -30,7 +29,7 @@ interface UpdateUserRequest {
   role?: string;
 }
 
-// Helper function untuk cek role admin – PERBAIKAN: Case insensitive
+// Helper function untuk cek role admin
 async function checkAdminRole(
   req: NextRequest,
 ): Promise<{ isAdmin: boolean; error?: NextResponse }> {
@@ -48,7 +47,6 @@ async function checkAdminRole(
       username: string;
       role: string;
     };
-    // Perbaikan: Case insensitive untuk role (menangani "ADMIN" atau "admin")
     if (decoded.role.toLowerCase() !== "admin") {
       return {
         isAdmin: false,
@@ -151,7 +149,7 @@ export async function PUT(req: NextRequest) {
 
   try {
     const { searchParams } = new URL(req.url);
-    const id = parseInt(searchParams.get("id") || "0"); // ID dari query ?id=1
+    const id = parseInt(searchParams.get("id") || "0");
     const { name, username, password, role }: UpdateUserRequest =
       await req.json();
 
@@ -159,8 +157,13 @@ export async function PUT(req: NextRequest) {
       return NextResponse.json({ error: "ID wajib diisi" }, { status: 400 });
     }
 
-    // Perbaikan: Fix syntax error, ganti 'any' dengan tipe spesifik
-    const updateData: Record<string, string | undefined> = {};
+    // Perbaikan: Fix tipe updateData
+    const updateData: {
+      name?: string;
+      username?: string;
+      password?: string;
+      role?: string;
+    } = {};
     if (name) updateData.name = name;
     if (username) updateData.username = username;
     if (password) {
@@ -177,7 +180,6 @@ export async function PUT(req: NextRequest) {
       const existingUser = await prisma.users.findUnique({
         where: { username },
       });
-      // Perbaikan: Konversi BigInt ke number untuk comparison
       if (existingUser && Number(existingUser.id) !== id) {
         return NextResponse.json(
           { error: "Username sudah digunakan" },
@@ -216,7 +218,7 @@ export async function DELETE(req: NextRequest) {
 
   try {
     const { searchParams } = new URL(req.url);
-    const id = parseInt(searchParams.get("id") || "0"); // ID dari query ?id=1
+    const id = parseInt(searchParams.get("id") || "0");
 
     if (!id) {
       return NextResponse.json({ error: "ID wajib diisi" }, { status: 400 });

@@ -1,17 +1,9 @@
 "use client";
 
 import { IBarang } from "@/types/barang";
+import { ITransaksi } from "@/types/transaksi";
 import { useQuery } from "@tanstack/react-query";
 import axios from "axios";
-
-// Interface untuk tipe data transaksi
-interface Transaksi {
-  id: number;
-  tipe_transaksi: string;
-  jumlah: number;
-  barang_id: number;
-  tanggal: string;
-}
 
 const Dashboard = () => {
   // Fetch data barang dengan tipe eksplisit
@@ -26,7 +18,7 @@ const Dashboard = () => {
 
   // Fetch data transaksi dengan tipe eksplisit
   const { data: transaksi, isLoading: loadingTransaksi } = useQuery<
-    Transaksi[]
+    ITransaksi[]
   >({
     queryKey: ["transaksi"],
     queryFn: () => axios.get("/api/transaksi").then((res) => res.data),

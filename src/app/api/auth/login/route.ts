@@ -1,9 +1,10 @@
+// app/api/auth/login/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import { PrismaClient } from "@/generated/prisma/client";
 import { PrismaPg } from "@prisma/adapter-pg";
 import { Pool } from "pg";
 import bcrypt from "bcrypt";
-import jwt from "jsonwebtoken";
+import jwt from "jsonwebtoken"; // Pastikan import jwt
 import { ILogin } from "@/types/auth";
 
 const connectionString = process.env.DATABASE_URL;
@@ -53,7 +54,7 @@ export async function POST(req: NextRequest) {
     }
 
     const token = jwt.sign(
-      { id: user.id.toString(), username: user.username, role: user.role }, // user.id.toString() mencegah error serialisasi
+      { id: user.id.toString(), username: user.username, role: user.role },
       JWT_SECRET,
       { expiresIn: "1h" },
     );

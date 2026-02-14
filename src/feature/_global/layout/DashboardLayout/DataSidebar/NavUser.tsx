@@ -1,7 +1,8 @@
-// components/ui/NavUser.tsx
 "use client";
 
 import { ChevronsUpDown, LogOut } from "lucide-react";
+import { useRouter } from "next/navigation"; // Ganti signOut ke useRouter
+import { useEffect, useState } from "react"; // Tambah useState dan useEffect
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
@@ -18,35 +19,30 @@ import {
   SidebarMenuItem,
   useSidebar,
 } from "@/components/ui/sidebar";
-import { useRouter } from "next/navigation";
-import axios from "axios";
-import { useEffect, useState } from "react";
 
 export function NavUser() {
   const { isMobile } = useSidebar();
   const router = useRouter();
-
   const [user, setUser] = useState<{ name: string; role: string } | null>(null);
 
   useEffect(() => {
-    const userStr = localStorage.getItem("user");
-
-    if (userStr) {
-      setUser(JSON.parse(userStr));
+    // Ambil data user dari localStorage
+    const userData = localStorage.getItem("user");
+    if (userData) {
+      setUser(JSON.parse(userData));
     }
   }, []);
 
-  const handleLogout = async () => {
-    try {
-      const res = await axios.post("/api/auth/logout");
+  // Default jika tidak ada data
+  const name = user?.name || "User";
+  const role = user?.role || "Unknown";
 
-      if (res.status === 200) {
-        router.push("/login");
-        router.refresh(); // penting untuk clear state
-      }
-    } catch (error) {
-      console.error("Logout gagal:", error);
-    }
+  const handleLogout = () => {
+    // Hapus token dan user dari localStorage
+    localStorage.removeItem("auth-token");
+    localStorage.removeItem("user");
+    // Redirect ke login
+    router.push("/login");
   };
 
   return (
@@ -63,16 +59,16 @@ export function NavUser() {
                 <Avatar className="h-8 w-8 rounded-lg">
                   <AvatarImage
                     src="https://avatar.iran.liara.run/public"
-                    alt={user?.name}
+                    alt={name}
                   />
                   <AvatarFallback className="rounded-lg">
-                    {user?.name.charAt(0).toUpperCase()}
+                    {name.charAt(0).toUpperCase()}
                   </AvatarFallback>
                 </Avatar>
 
                 <div className="grid flex-1 text-left text-sm leading-tight">
-                  <span className="truncate font-medium">{user?.name}</span>
-                  <span className="truncate text-xs">{user?.role}</span>
+                  <span className="truncate font-medium">{name}</span>
+                  <span className="truncate text-xs">{role}</span>
                 </div>
 
                 <ChevronsUpDown className="ml-auto size-4" />
@@ -91,15 +87,15 @@ export function NavUser() {
                 <Avatar className="h-8 w-8 rounded-lg">
                   <AvatarImage
                     src="https://avatar.iran.liara.run/public"
-                    alt={user?.name}
+                    alt={name}
                   />
                   <AvatarFallback className="rounded-lg">
-                    {user?.name.charAt(0).toUpperCase()}
+                    {name.charAt(0).toUpperCase()}
                   </AvatarFallback>
                 </Avatar>
                 <div className="grid flex-1 text-left text-sm leading-tight">
-                  <span className="truncate font-medium">{user?.name}</span>
-                  <span className="truncate text-xs">{user?.role}</span>
+                  <span className="truncate font-medium">{name}</span>
+                  <span className="truncate text-xs">{role}</span>
                 </div>
               </div>
             </DropdownMenuLabel>

@@ -2,6 +2,7 @@
 
 import { SidebarProvider } from "@/components/ui/sidebar";
 import AppSidebar from "./DataSidebar/AppSidebar";
+import PageHead from "../PageHead/PageHead";
 
 interface DashboardLayoutProps {
   title: string;
@@ -12,6 +13,7 @@ interface DashboardLayoutProps {
 const DashboardLayout = ({ title, type, children }: DashboardLayoutProps) => {
   return (
     <SidebarProvider>
+      <PageHead title={`${type} | ${title}`} />
       <div className="flex h-screen w-full">
         <AppSidebar type={type} />
         <main className="flex-1 p-2 h-full overflow-auto">
